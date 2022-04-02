@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AVAX APEX - HIGH YIELD - PASSIVE INCOME</title>
+
+    <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="img/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="img/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="img/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="img/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="img/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="img/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/img/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="title" content="BNBEATS Community Experimental Yield Farm on Binance Smart Chain">
+    <meta name="description" content="- Connect any compatible wallet
+    - Choose one of the fee plans, enter the amount of BNB (0.05 BNB minimum) using the "Stake" button on our website
+    - Wait for your earnings
+    - Withdraw winnings at any time using the "Withdraw" button on our website">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://avaxapex.com/">
+    <meta property="og:title" content="AVAX APEX - High Yield Contract - Earn Passive Income">
+    <meta property="og:description" content="- Connect any compatible wallet
+    - Stake your Avax, no min requirement
+    - Wait for your earnings
+    - Withdraw winnings at any time using the "Withdraw" button on our website">
+    <meta property="og:image" content="https://avaxapex.com/img/avax-high-yield-contract-share.jpg">
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-analytics-compat.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.5.4/ethers.umd.min.js" integrity="sha512-xmbPx0riylir51GhTZCFd20yS7NYZNpfDTbEWBjDRzs+UaGb2RyjtASTVtF2ydQWp3xkso9j4sJj39PdSH8/EA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!--<script src="https://unpkg.com/moralis/dist/moralis.js"></script>-->
+    <script src="https://unpkg.com/moralis@latest/dist/moralis.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      if (global === undefined) {
+        var global = window;
+      }
+    </script>
+    <script charset="UTF-8" src="https://web.webpushs.com/js/push/90fc222ed6c0ff75b8970eafc889e4f6_1.js" async></script>
+    <link rel="stylesheet" href="final.css">
+
+  </head>
+  <body>
+
+    <div id="loader" style="position:fixed;left:0;right:0;bottom:0;top:0;background:rgba(0,0,0,0.8); z-index:9999999;display:none">
+
+        <!--<svg class="centerIt" x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32"><g transform="translate(0, 0)"><g class="nc-loop-circle-32-icon-f"><path d="M16 32a16 16 0 1 1 16-16 16.019 16.019 0 0 1-16 16zm0-29a13 13 0 1 0 13 13A13.015 13.015 0 0 0 16 3z" fill="#fc75ff" opacity=".4"></path><path d="M32 16h-3A13.015 13.015 0 0 0 16 3V0a16.019 16.019 0 0 1 16 16z" fill="#fc75ff" data-color="color-2"></path></g><style>.nc-loop-circle-32-icon-f{--animation-duration:0.5s;transform-origin:16px 16px;animation:nc-loop-circle-anim var(--animation-duration) infinite linear}@keyframes nc-loop-circle-anim{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style></g></svg>-->
+
+        <svg class="centerIt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="24px" height="24px" viewBox="0 0 24 24" stroke-width="2"><g stroke-width="2" transform="translate(0, 0)"><g class="nc-loop-dots-2-24-icon-o" stroke-width="2"><circle cx="12" cy="3" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.6" stroke-linejoin="miter"></circle><circle cx="18.364" cy="5.636" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.8" stroke-linejoin="miter"></circle><circle cx="21" cy="12" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" stroke-linejoin="miter"></circle><circle cx="18.364" cy="18.364" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.4" stroke-linejoin="miter"></circle><circle cx="12" cy="21" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.4" stroke-linejoin="miter"></circle><circle cx="5.636" cy="18.364" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.4" stroke-linejoin="miter"></circle><circle cx="3" cy="12" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.4" stroke-linejoin="miter"></circle><circle cx="5.636" cy="5.636" fill="none" r="2" stroke="#f16868" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2" opacity="0.4" stroke-linejoin="miter"></circle></g><style stroke-width="2">.nc-loop-dots-2-24-icon-o{--animation-duration:0.8s;transform-origin:12px 12px;animation:nc-loop-dots-2-anim var(--animation-duration) infinite steps(8,start)}@keyframes nc-loop-dots-2-anim{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style></g></svg>
+
+    </div>
+
+    <div class="" style="margin-top: 50px;width: 150px;height: 150px;position: relative;left: 50%;right: 0;margin-left: -75px;">
+      <div class="centerIt pulsating-circle-blue" style="z-index: 10;width: 120px;height: 120px"></div>
+      <img class="centerIt" src="img/loader_red.svg" style="z-index: 9;width: 420px;" />
+    </div>
+
+
+    <div class="conWallet" style="position: relative;width: 350px;margin: 60px auto 0px;min-height: 80px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.6;padding: 10px;background: rgba(0,0,0,0.4);border-radius: 10px;font-size:19px">
+        <b style="font-size:24px">EARN PASSIVE INCOME</b><br>
+        Stake your AVAX with AVAX APEX and earn 10% a day in passive income. Start by connecting your AVAST wallet.
+    </div>
+
+    <div class="conWallet btn btnConnect" style="width: 350px;margin: 0 auto; margin-top:30px;height: 80px;border-radius:10px;background: #ff0000;color:#fff;font-size: 22px;position: relative;">
+          <p class="centerIt" style="margin:0; font-family: 'Concert One', cursive !important;" id="butText">CONNECT WALLET</p>
+    </div>
+
+    <div class="invWallet" style="position: relative;width: 350px;margin: 60px auto 0px;min-height: 80px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0,0,0,0.8);border-radius: 10px;font-size:19px; min-height:220px;z-index:100;display:none">
+
+      <div style="position:absolute;left:20px;top:20px;right:20px;height: calc( 100% - 30px);">
+
+          <div style="position:relative;width:100%;padding:10px;color:#fff">
+            <h2 style="margin-bottom: 5px;margin-top: 5px;">STAKE YOUR AVAX</h2>
+            <p style="margin:0px;font-size: 22px;" id="yText">EARN <b>10%</b> A DAY FOR <b>20 DAYS</b></p>
+          </div>
+
+
+
+          <input type="text" id="myVal" class="" placeholder="0.00" style="width: 200px;height:50px;border-radius:6px;border: 4px solid #efefef;background:transparent;padding:10px;color: #fff;font-size: 34px;font-weight: 700;text-align: center;position: relative;left: 50%;transform: translate(-50%);">
+          <div style="position:absolute;left:0;right:0;bottom: 35px;height:30px;text-align:center;color:#fff;font-weight:700">AVAX</div>
+
+      </div>
+
+
+    </div>
+
+    <div class="invWallet btn btnInvest" style="width: 350px;margin: 0 auto; margin-top:30px;height: 80px;border-radius:10px;background: #ff0000;color:#fff;font-size: 22px;position: relative;display:none">
+          <p class="centerIt" style="margin:0; font-family: 'Concert One', cursive !important;" id="butText">STAKE AVAX</p>
+    </div>
+
+
+
+    <div class="invWallet" style="position: relative;width: 350px;margin: 60px auto 20px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.8);border-radius: 10px;font-size: 19px;min-height: 80px;padding-top: 30px;">
+
+      <div style="position:relative;/* margin-top:30px; */width: 100%;margin-left: 0;height:60px">
+          <svg id="copyMyLink" style="width: 15px;height: 15px;position:absolute;right:20px;top: 6px;z-index: 10;" class="btn" x="0px" y="0px" width="16px" height="16px" viewBox="0 0 16 16"><g transform="translate(0, 0)"><path fill="#ffffff" d="M10,4H2C1.4,4,1,4.4,1,5v10c0,0.6,0.4,1,1,1h8c0.6,0,1-0.4,1-1V5C11,4.4,10.6,4,10,4z"></path> <path data-color="color-2" fill="#ffffff" d="M14,0H4v2h9v11h2V1C15,0.4,14.6,0,14,0z"></path></g></svg>
+          <div style="position:absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">REFERRAL LINK</div>
+          <input type="text" id="myLink" class="centerIt" value="" style="top: 63%;width: 88%;height: 5px;border-radius:6px;border: 1px solid #efefef;background:transparent;padding:10px;color: #fff;font-size: 14px;font-weight: 200;text-align: left;">
+      </div>
+
+    </div>
+
+    <div class="invWallet" style="position: relative;width: 350px;margin: 0px auto 0px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.8);border-radius: 10px;font-size: 19px;min-height: 180px;display:none;margin-bottom: 20px;">
+
+      <div style="position:relative;margin-top:30px;width: 100%;margin-left: 0;height:60px;border-radius:6px;border:2px solid #fff">
+        <div style="position:absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">TOTAL TO WITHDRAW NOW</div>
+        <p id="TotalWithdrawNow" class="centerIt" style="margin:0;text-align:center;color: #fff;font-weight: 700;font-size: 28px;margin-top:5px">0</p>
+      </div>
+
+      <div class="invWallet btn" id="widthdrawNow" style="width: 350px;margin: 0 auto; margin-top:30px;height: 80px;border-radius:10px;background: #ff0000;color:#fff;font-size: 22px;position: relative;display:none">
+            <p class="centerIt" style="margin:0; font-family: 'Concert One', cursive !important;" id="butText">WITHDRAW NOW!</p>
+      </div>
+
+    </div>
+
+    <div class="invWallet" style="position: relative;width: 350px;margin: 40px auto 20px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.8);border-radius: 10px;font-size: 19px;min-height: 280px;">
+
+
+      <div style="position:relative;width:100%;height:85px;display: flex;justify-content: space-between;">
+          <div style="position:relative;margin-top: 10px;width: 100%;margin-left: 0;height:60px;border-radius:6px;border:2px solid #fff">
+            <div style="position:absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">TOTAL DEPOSITED</div>
+            <p id="TotalDeposits" class="centerIt" style="margin:0;text-align:center;color: #fff;font-weight: 700;font-size: 28px;margin-top:5px">0.00000</p>
+          </div>
+      </div>
+
+      <div style="position:relative;width:100%;height:85px;display: flex;justify-content: space-between;">
+          <div style="position:relative;margin-top:30px;width: 150px;margin-left: 0;height:60px;border-radius:6px;border:2px solid #fff;/* margin-left: 20px; *//* margin-right: 20px; */">
+            <div style="position: absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">REFERRAL BONUS</div>
+            <p id="ReferralTotalBonus" class="centerIt" style="margin:0;text-align:center;color: #fff;font-weight: 700;font-size: 28px;margin-top:5px">0.00000</p>
+          </div>
+
+          <div style="position:relative;margin-top:30px;width: 170px;margin-left: 0;height:60px;border-radius:6px;border:2px solid #fff">
+            <div style="position:absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">REFERRALS</div>
+            <p id="TotalReferrals" class="centerIt" style="margin:0;text-align:center;color: #fff;font-weight: 700;font-size: 28px;margin-top:5px">0.00000</p>
+          </div>
+      </div>
+
+
+      <div style="position:relative;width:100%;height:85px;display: flex;justify-content: space-between;">
+        <!--<div id="widthdrawNow" class="btn" style="position:absolute;right: 7px;top: 36px;width: 84px;height: 22px;border-radius:4px;background: #fff;color:#000;font-size: 11px;font-weight: 700; z-index: 10;">
+          <p class="centerIt" style="margin:0;text-align:center;width: 100%;">WITHDRAW NOW</p>
+        </div>-->
+
+        <div style="position:relative;margin-top:30px;width: 100%;margin-left: 0;height:60px;border-radius:6px;border:2px solid #fff">
+          <div style="position:absolute;left:10px;top:8px;font-size:12px;color:#fff;right:10px">TOTAL WITHDRAWN</div>
+          <p id="TotalWithdrawn" class="centerIt" style="margin:0;text-align:center;color: #fff;font-weight: 700;font-size: 28px;margin-top:5px">0</p>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div style="position: relative;width: 350px;margin: 40px auto 0px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.6);border-radius: 10px;font-size: 19px;min-height: 40px;margin-bottom: 0px;">
+
+      <div style="position:relative;width: 100%;margin-left: 0;border-radius:6px;">
+          <div style="position:absolute;left:10px;top: -25px;font-size: 17px;color:#fff;right:10px;font-weight: 700;">INFORMATION</div>
+
+          <p style="margin:0;width: 95%;margin-left: 10px;text-align: left;font-size: 16px;color:#fff;position: relative;margin-top: 40px;">
+              AVAX APEX - HIGH YIELD - MAKE PASSIVE INCOME<br><br>
+              <b>INSTRUCTIONS FOR USE</b><br><br>
+              1) Connect any compatible wallet<br>
+              2) Invest <b>ANY AMOUNT OF AVAX</b><br>
+              3) Wait for your earnings<br>
+              4) Withdraw winnings at any time using the "Withdraw" button on our website<br>
+              <br><br>
+              <b>INVESTMENT CONDITIONS</b><br><br>
+              (*) Total income: 10% every day<br>
+              (*) Earnings every time, withdraw at any time<br>
+              <br><br>
+              <b>AFFILIATION PROGRAM</b><br><br>
+              (*) 2 Tier Referral Reward: 7% - 3%
+              <br><br>
+              <b>DISTRIBUTION OF FUNDS</b><br><br>
+              (*) 90% of the main platform balance, used for participant payments, affiliate program bonuses<br>
+              (*) 10% Advertising and promotion expenses, Support work, technical operation, administration fee<br>
+              <br><br>
+               Note: This is an experimental community project,which means that this project has high risks and high profits. Once the contract balance drops to zero, payments will stop, deposit at your own risk.
+               <br><br>
+
+            </p>
+
+      </div>
+
+    </div>
+
+    <div style="position: relative;width: 350px;margin: 40px auto 0px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.6);border-radius: 10px;font-size: 19px;min-height: 180px;margin-bottom: 40px;margin-top:30px">
+
+      <div style="position:relative;width: 100%;margin-left: 0;border-radius:6px;">
+          <div style="position:absolute;left:10px;top: -25px;font-size: 17px;color:#fff;right:10px;font-weight: 700;">HAZE CRYPTO AUDIT</div>
+
+          <p style="margin:0;width: 95%;margin-left: 10px;text-align: left;font-size: 16px;color:#fff;position: relative;margin-top: 40px; display: flex; justify-content:space-around">
+
+
+
+          </p>
+
+      </div>
+
+    </div>
+
+    <div style="position: relative;width: 350px;margin: 60px auto 0px;color: rgb(255, 255, 255);text-transform: uppercase;line-height: 1.2;padding: 10px;background: rgba(0, 0, 0, 0.6);border-radius: 10px;font-size: 19px;min-height: 180px;margin-bottom: 120px;margin-top:30px">
+
+      <div style="position:relative;width: 100%;margin-left: 0;border-radius:6px;">
+          <div style="position:absolute;left:10px;top: -25px;font-size: 17px;color:#fff;right:10px;font-weight: 700;">SOCIAL MEDIA & CONTRACT</div>
+
+          <p style="margin:0;width: 95%;margin-left: 10px;text-align: left;font-size: 16px;color:#fff;position: relative;margin-top: 40px; display: flex; justify-content:space-around">
+
+              <a href="https://avascan.info/blockchain/c/address/0x53ebd06E9131EaCfEd4394a8cF9ed869F3a260dc/contract" target="_blank" style="width:60px;height:60px;display:inline"><img src="img/bscscan-logo.png" style="width:60px;height:60px;" /></a>
+              <a href="https://t.me/+mMsSKmjl3x5kZDlh" target="_blank" style="width:60px;height:60px;display:inline"><img src="img/telegram-es.png" style="width:60px;height:60px;" /></a>
+              <a href="https://t.me/+CYa7jft5ARY5ZTZh" target="_blank" style="width:60px;height:60px;display:inline"><img src="img/telegram-en.png" style="width:60px;height:60px;" /></a>
+
+          </p>
+
+      </div>
+
+    </div>
+
+
+
+    <div id="reInvestBack" style="position: fixed;inset: 0px;background: rgba(6, 1, 37, 0.9);z-index: 999999;display:none">
+
+
+          <div class="centerIt shadow" style="width:550px;max-width: 80%;min-height:450px;border-radius:8px;background:#0c0b12;border: 2px solid #f05efa;padding:20px;">
+
+                <img class="centerIt" src="img/make-the-beats-work.jpg" style="top:0;z-index: 9999;width: 460px;max-width: 85%;transform: translate(-50%);" />
+
+          </div>
+
+
+    </div>
+
+
+
+    <div id="joinHeroes" class="centerIt shadow" style="position:fixed; width:250px;height:250px;background:#fff;border-radius:8px;padding:25px;z-index:99999;display:none">
+
+          <svg id="closeHeroes" style="position:absolute;right:20px;top:20px;z-index:99999999" x="0px" y="0px" width="24px" height="24px" viewBox="0 0 24 24"><g transform="translate(0, 0)"><path fill="#262626" d="M22.7,4.3l-3-3c-0.4-0.4-1-0.4-1.4,0L12,7.6L5.7,1.3c-0.4-0.4-1-0.4-1.4,0l-3,3c-0.4,0.4-0.4,1,0,1.4L7.6,12 l-6.3,6.3c-0.4,0.4-0.4,1,0,1.4l3,3c0.4,0.4,1,0.4,1.4,0l6.3-6.3l6.3,6.3c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3l3-3 c0.4-0.4,0.4-1,0-1.4L16.4,12l6.3-6.3C23.1,5.3,23.1,4.7,22.7,4.3z"></path></g></svg>
+
+          <div style="width:100%;position:relative">
+              <h2>JOIN THE HEROES</h2>
+              <p style="margin:0;text-transform: uppercase;line-height: 1.3;">BNBEATS HEROES is an invite-only group where you will be airdropped unique NFTs and get tips and tricks for better BNB yields</p>
+              <p style="margin:0;font-weight: 700;margin-top: 16px;">CLICK THE BUTTON BELOW AND VALIDATE YOUR ACCOUNT</p>
+
+              <div id='JoinTheHeroes' class="btn" style="width: 100%;height: 56px;border-radius:10px;background: #ff0000;color:#fff;font-size: 22px;position: relative;margin-top: 15px;">
+                    <p class="centerIt" style="margin:0;font-family: 'Concert One', cursive !important;width: 100%;text-align: center;" id="butText">JOIN THE HEROES</p>
+              </div>
+          </div>
+
+
+
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.1/web3.min.js" integrity="sha512-GKw4QT/RccGJIwQxY3MhyiQ5pHrhQ8SuKFEafV+WcpOvtz7iYFQuQGFCvmGlHLctJTe8KrWU1FqvF7VOkEAJtw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+    <!--<script  src="https://unpkg.com/@metamask/detect-provider@1.2.0/dist/index.js"></script>
+    <script  src="https://unpkg.com/ethers@5.5.4/lib/index.js"></script>
+    <script  src="https://unpkg.com/mobile-detect@1.4.5/mobile-detect.js"></script>-->
+
+    <script type="module" src="version18.js"></script>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+        import { getAnalytics, logEvent  } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyAAtZao8iPwBjfo_ogDQc6i3r8Zr6PrFAU",
+          authDomain: "metaversingco-yield.firebaseapp.com",
+          databaseURL: "https://metaversingco-yield-default-rtdb.firebaseio.com",
+          projectId: "metaversingco-yield",
+          storageBucket: "metaversingco-yield.appspot.com",
+          messagingSenderId: "340601396951",
+          appId: "1:340601396951:web:1449f5c7932d64fcc11a92",
+          measurementId: "G-B0QV2DVJBS"
+        };
+
+        // Initialize Firebase
+        var app = initializeApp(firebaseConfig);
+        window.app = app;
+        window.analytics = getAnalytics(window.app);
+        window.logEvent = logEvent;
+        console.log(typeof window.logEvent, typeof app, typeof window.app);
+
+      </script>
+
+  </body>
+</html>

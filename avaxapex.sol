@@ -9,7 +9,7 @@ Staking avax - AVALANCHE
 
 */
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.7;
 
 library SafeMath {
     /**
@@ -307,13 +307,16 @@ contract AvaxApex is Dev {
 		uint256 percent;
 		uint256 amountPaid;
 	}
+
     struct User {
 		Deposit[] deposits;
+        uint256 referralsCount;
         mapping(address => Referred) referrals;
         address[2] referral;
         uint256 checkpoint;
 		uint256 bonus;
         uint256 totalBonus;
+        uint256 withdrawn;
         BlockedState blocked;
 	}
 
@@ -383,6 +386,7 @@ contract AvaxApex is Dev {
         require(balanceAllowed > totalAmount, "Dividends amount not allowed");
 
 		user.checkpoint = block.timestamp;
+        user.withdrawn = user.withdrawn.add(totalAmount);
 
         payable(_msgSender()).transfer(totalAmount);
 
@@ -390,8 +394,8 @@ contract AvaxApex is Dev {
 	}
 
 
-    function getUserDividends(address userAddress) public view returns (uint256) {
-		User storage user = users[userAddress];
+    function getUserDividends(address user_) public view returns (uint256) {
+		User storage user = users[user_];
 
 		uint256 totalAmount;
 
@@ -409,6 +413,76 @@ contract AvaxApex is Dev {
 
 		return totalAmount;
 	}
+
+    /// @dev Functions that help to show info
+
+    function getContractBalance() public view returns (uint256) {
+		return address(this).balance;
+	}
+
+    function getUserTotalWithdrawn(address user) public view returns (uint256) {
+		return users[user].withdrawn;
+	}
+
+	function getUserCheckpoint(address user) public view returns(uint256) {
+		return users[user].checkpoint;
+	}
+
+	function getUserReferrer(address user) public view returns(address) {
+		return users[user].referral[0];
+	}
+
+	function getUserReferralsCount(address user_) public view returns(uint256) {
+		return users[user_].referralsCount;
+	}
+
+	function getUserReferralBonus(address user) public view returns(uint256) {
+		return users[user].bonus;
+	}
+
+	function getUserReferralTotalBonus(address user) public view returns(uint256) {
+		return users[user].totalBonus;
+	}
+
+	function getUserReferralWithdrawn(address user) public view returns(uint256) {
+		return users[user].totalBonus.sub(users[user].bonus);
+	}
+
+	function getPlanInfo(uint8 plan) public view returns(uint256 time, uint256 percent) {
+		time = plans[plan].time;
+		percent = plans[plan].percent;
+	}
+
+    function getUserInfoBlocked(address user_) public view returns(bool state, uint8 times, uint256 investPenalty, uint256 date) {
+        BlockedState memory _blocked = users[user_].blocked;
+        state = _blocked.state;
+        times = _blocked.times;
+        investPenalty = _blocked.investPenalty;
+        date = _blocked.date;
+    }
+
+    function getUserDepositInfo(address user_, uint256 index) public view returns(uint8 plan, uint256 percent, uint256 amount, uint256 start, uint256 finish) {
+	    User storage user = users[user_];
+		plan = user.deposits[index].plan;
+		percent = plans[plan].percent;
+		amount = user.deposits[index].amount;
+		start = user.deposits[index].start;
+		finish = user.deposits[index].start.add(plans[user.deposits[index].plan].time.mul(1 days));
+	}
+
+    function getUserReferenceInfo(address user_, address referral_) public view returns(uint256 percent, uint256 amount) {
+		percent = users[user_].referrals[referral_].percent;
+		amount = users[user_].referrals[referral_].amountPaid;
+    }
+
+    function getUserInfo(address user_) public view returns(uint256 checkpoint, bool blocked, uint256 referrals, uint256 totalBonus, uint256 withdrawn, uint256 dividends) {
+        checkpoint = getUserCheckpoint(user_);
+        blocked = users[user_].blocked.state;
+        referrals = getUserReferralsCount(user_);
+        totalBonus = getUserReferralTotalBonus(user_);
+        withdrawn = getUserTotalWithdrawn(user_);
+        dividends = getUserDividends(user_);
+    }
 
     /// @dev Utils and functions internal
 
@@ -439,6 +513,7 @@ contract AvaxApex is Dev {
             if(referrer != address(0)){
                 users[user_].referral[index] = referrer;
                 users[referrer].referrals[user_] = Referred(REFERRAL_PERCENTS[index],0);
+                users[referrer].referralsCount = users[referrer].referralsCount.add(1);
             }
         }
     }

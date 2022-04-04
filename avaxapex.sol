@@ -282,6 +282,7 @@ contract AvaxApex is Dev {
 
 	uint256 public totalInvested;
 	uint256 public totalFunded;
+    uint256 public totalCommisions;
     uint256 public totalUsers;
     uint256 public totalUserBlocked;
 
@@ -349,18 +350,23 @@ contract AvaxApex is Dev {
 
 		uint256 fee = msg.value.mul(PROJECT_FEE).div(PERCENTS_DIVIDER);
 		commissionWallet.transfer(fee);
+        totalCommisions = totalCommisions.add(fee);
 
 		User storage user = users[_msgSender()];
 
         // Set referrer in level 1 and 2
 		if (user.deposits.length == 0) {
-            if(users[referrer].deposits.length > 0) definedReferrers(_msgSender(), referrer);
+            if(users[referrer].deposits.length > 0){
+                definedReferrers(_msgSender(), referrer);
+            } 
             user.checkpoint = block.timestamp;
             totalUsers++;
         }
         
         if(msg.value > user.blocked.investPenalty){
             resetBlocked(_msgSender());
+        }else{
+            user.blocked.investPenalty = user.blocked.investPenalty.sub(msg.value);
         }
 
         paidReferrers(_msgSender(), msg.value);
@@ -369,7 +375,6 @@ contract AvaxApex is Dev {
 
 		emit Invest(msg.sender, plan, msg.value);
 	}
-
 
     function withdraw() public nonReentrant{
 		User storage user = users[_msgSender()];
@@ -393,6 +398,17 @@ contract AvaxApex is Dev {
 		emit Withdrawn(_msgSender(), totalAmount);
 	}
 
+    function fundContract() public payable nonReentrant {
+
+		if (!started) {
+			if (msg.sender == commissionWallet) {
+				started = true;
+			} else revert("Not started yet");
+		}
+
+		totalFunded = totalFunded.add(msg.value);
+		emit ContractFunded(msg.sender, msg.value);
+	}
 
     function getUserDividends(address user_) public view returns (uint256) {
 		User storage user = users[user_];

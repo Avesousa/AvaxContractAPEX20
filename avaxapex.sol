@@ -234,7 +234,34 @@ abstract contract Context {
     }
 }
 
-contract Dev is Context{
+contract Owner {
+    address private _owner;
+
+    event DefinedDev(address indexed previousOwner, address indexed newOwner);
+
+    /**
+    * @dev Initializes the contract setting the deployer as the initial owner.
+    */
+    constructor (address owner) {
+      _owner = owner;
+      emit DefinedDev(address(0), owner);
+    }
+
+    /**
+    * @dev Returns the address of the current owner.
+    */
+    function owner() public view returns (address) {
+      return _owner;
+    }
+
+    modifier onlyOwner() {
+      require(_owner == _msgSender(), "Only owner: caller is not the owner");
+      _;
+    }
+
+}
+
+contract Dev is Context, Owner{
     address private _dev;
 
     event DefinedDev(address indexed previousDev, address indexed newDev);
@@ -242,7 +269,7 @@ contract Dev is Context{
     /**
     * @dev Initializes the contract setting the deployer as the initial owner.
     */
-    constructor () {
+    constructor (address owner) Owner(owner) {
       address msgSender = _msgSender();
       _dev = msgSender;
       emit DefinedDev(address(0), msgSender);
@@ -256,11 +283,27 @@ contract Dev is Context{
     }
 
     modifier onlyDev() {
-      require(_dev == _msgSender(), "Ownable: caller is not the owner");
+      require(_dev == _msgSender(), "Dev function: caller is not the dev");
       _;
     }
 
+    function renounceDev() public onlyDev {
+      emit DefinedDev(_dev, address(0));
+      _dev = address(0);
+    }
+
+    function transferDev(address newDev) public onlyOwner {
+      _transferDevFunction(newDev);
+    }
+
+    function _transferOwnership(address newDev) internal {
+      require(newDev != address(0), "Dev function: new dev is the zero address");
+      emit DefinedDev(_dev, newDev);
+      _dev = newDev;
+    }
+
 }
+
 
 contract AvaxApex is Dev {
     using SafeMath for uint256;
@@ -306,7 +349,7 @@ contract AvaxApex is Dev {
 	}
 
     struct Referred {
-		uint256 percent;
+        uint8 level;
 		uint256 amountPaid;
 	}
 
@@ -314,6 +357,7 @@ contract AvaxApex is Dev {
 		Deposit[] deposits;
         uint256 referralsCount;
         mapping(address => Referred) referrals;
+        uint256[2] percentReferral;
         address[2] referral;
         uint256 checkpoint;
 		uint256 bonus;
@@ -330,11 +374,12 @@ contract AvaxApex is Dev {
 
     // Events for emit
     event Invest(address indexed user, uint8 plan, uint256 amount);
+    event ReInvest(address indexed user, uint8 plan, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event Funded(address indexed user, uint256 amount);
     event BlockedWhale(address indexed user);
 
-    constructor(address payable wallet){
+    constructor(address payable wallet) Dev(wallet){
 		commissionWallet = wallet;
         plans.push(Plan(20, 100));
 		_status = _NOT_ENTERED;
@@ -346,26 +391,16 @@ contract AvaxApex is Dev {
 				started = true;
 			} else revert("Not started yet");
 		}
-
         require(plan < 1, "Invalid plan");
-
-		uint256 fee = msg.value.mul(PROJECT_FEE).div(PERCENTS_DIVIDER);
-		commissionWallet.transfer(fee);
-        totalCommisions = totalCommisions.add(fee);
-
+		paidFee(msg.value);
 		User storage user = users[_msgSender()];
 
-        // Set referrer in level 1 and 2
 		if (user.deposits.length == 0) {
-            if(users[referrer].deposits.length > 0){
-                definedReferrers(_msgSender(), referrer);
-            } 
-            user.checkpoint = block.timestamp;
-            totalUsers++;
+            definedNewUser(user, referrer);
         }
         
         if(msg.value > user.blocked.investPenalty){
-            resetBlocked(_msgSender());
+            resetBlocked();
         }else{
             user.blocked.investPenalty = user.blocked.investPenalty.sub(msg.value);
         }
@@ -374,8 +409,21 @@ contract AvaxApex is Dev {
 		user.deposits.push(Deposit(plan, msg.value, block.timestamp));
 		totalInvested = totalInvested.add(msg.value);
 
-		emit Invest(msg.sender, plan, msg.value);
+		emit Invest(_msgSender(), plan, msg.value);
 	}
+
+    function reInvest() public nonReentrant {  
+        User storage user = users[_msgSender()];
+        uint256 amount = getUserAvailableWithdraw;
+
+        if(msg.value > user.blocked.investPenalty){
+            resetBlocked(_msgSender());
+        }else{
+            user.blocked.investPenalty = user.blocked.investPenalty.sub(msg.value);
+        }
+        paidReferrers(_msgSender(), amount);
+        user.deposits.push(Deposit(0, amount, block.timestamp));
+    }
 
     function withdraw() public nonReentrant{
 		User storage user = users[_msgSender()];
@@ -412,6 +460,14 @@ contract AvaxApex is Dev {
 		totalFunded = totalFunded.add(msg.value);
 		emit Funded(msg.sender, msg.value);
 	}
+
+    function changePercentReferrer(address user_, uint8 index, uint256 percent) public onlyDev, onlyOwner{
+        require(user != address(0));
+        require(index < REFERRAL_PERCENTS.length, "I don't exist level");
+        require(percent >= REFERRAL_PERCENTS[index], "Percent not allowed");
+        require(percent <= REFERRAL_PERCENTS[index].add(3), "Percent not allowed");
+        definedPercentReferrer(user_, index, percent);
+    }
 
     function getUserDividends(address user_) public view returns (uint256) {
 		User storage user = users[user_];
@@ -497,9 +553,17 @@ contract AvaxApex is Dev {
 		finish = user.deposits[index].start.add(plans[user.deposits[index].plan].time.mul(1 days));
 	}
 
+    function getUserPercentReferrerInfo(address user_, uint8 index) public view returns(uint256) {
+        return users[user_].percentReferral[index];
+    }
+
     function getUserReferenceInfo(address user_, address referral_) public view returns(uint256 percent, uint256 amount) {
 		percent = users[user_].referrals[referral_].percent;
 		amount = users[user_].referrals[referral_].amountPaid;
+    }
+
+    function getUserAvailableWithdraw(address user_) public view returns(uint256) {
+        return getUserDividends(user_).add(getUserReferralBonus(user_));
     }
 
     function getUserInfo(address user_) public view 
@@ -510,7 +574,7 @@ contract AvaxApex is Dev {
         totalBonus = getUserReferralTotalBonus(user_);
         withdrawn = getUserTotalWithdrawn(user_);
         totalDeposits = getUserTotalDeposits(user_);
-        available = getUserDividends(user_).add(getUserReferralBonus(user_));
+        available = getUserAvailableWithdraw(user_);
     }
 
     /// @dev Utils and functions internal
@@ -529,36 +593,57 @@ contract AvaxApex is Dev {
         }
     }
 
-    function resetBlocked(address user) internal {
-        users[user].blocked.state = false;
-        users[user].blocked.investPenalty = 0;
-        users[user].blocked.date = 0;
-        users[user].blocked.times = 0;
+    function resetBlocked() internal {
+        users[_msgSender()].blocked.state = false;
+        users[_msgSender()].blocked.investPenalty = 0;
+        users[_msgSender()].blocked.date = 0;
+        users[_msgSender()].blocked.times = 0;
     }
 
-    function definedReferrers(address user_, address referrer_) internal { 
+    function definedReferrers(address referrer_) internal { 
         for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++) {
             address referrer = index > 0 ? users[referrer_].referral[index.sub(1)] : referrer_;
             if(referrer != address(0)){
-                users[user_].referral[index] = referrer;
-                users[referrer].referrals[user_] = Referred(REFERRAL_PERCENTS[index],0);
+                users[_msgSender()].referral[index] = referrer;
+                users[referrer].referrals[_msgSender()] = Referred(index.add(1),0);
                 users[referrer].referralsCount = users[referrer].referralsCount.add(1);
-            }
+            }else break;
         }
     }
 
-    function paidReferrers(address user_, uint256 _amount) internal {
+    function paidReferrers(uint256 _amount) internal {
         for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++) {
-            address referrer = users[user_].referral[index];
+            address referrer = users[_msgSender()].referral[index];
             if(referrer != address(0)){
-                uint256 amount = _amount.mul(REFERRAL_PERCENTS[index]).div(PERCENTS_DIVIDER);
+                uint256 amount = _amount.mul(users[referrer].percentReferral[index]).div(PERCENTS_DIVIDER);
                 User storage user = users[referrer];
-                
+
                 user.bonus = user.bonus.add(amount);
                 user.totalBonus = user.totalBonus.add(amount);
-                user.referrals[user_].amountPaid = user.referrals[user_].amountPaid.add(amount);
+                user.referrals[_msgSender()].amountPaid = user.referrals[_msgSender()].amountPaid.add(amount);
             }else break;
         }
+    }
+
+    function definedPercentReferrer(address user_, uint8 index, uint256 percent) internal{
+        users[user_].percentReferral[index] = percent;
+    }
+
+    function paidFee(uint256 amount) internal {
+        uint256 fee = amount.mul(PROJECT_FEE).div(PERCENTS_DIVIDER);
+		commissionWallet.transfer(fee);
+        totalCommisions = totalCommisions.add(fee);
+    }
+
+    function definedNewUser(User storage user_, address referrer){
+        if(users[referrer].deposits.length > 0){
+            definedReferrers(referrer);
+        } 
+        user.checkpoint = block.timestamp;
+        for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++){
+            definedPercentReferrer(_msgSender(), index, REFERRAL_PERCENTS[index]);
+        }
+        totalUsers++;
     }
 
     /**

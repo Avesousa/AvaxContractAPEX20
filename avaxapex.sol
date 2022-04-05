@@ -9,7 +9,7 @@ Staking avax - AVALANCHE
 
 */
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.11;
 
 library SafeMath {
     /**
@@ -268,6 +268,7 @@ contract AvaxApex is Dev {
 
     uint256[] public REFERRAL_PERCENTS = [70, 30];
     uint256 constant public PROJECT_FEE = 100;
+    uint256 constant public CONTRACT_FEE = 30;
 	uint256 constant public PERCENTS_DIVIDER = 1000;
 	uint256 constant public PERCENTS_PENALTY = 100;
     uint256 constant public PERCENTS_ALLOWED_BALANCE = 250;
@@ -383,7 +384,8 @@ contract AvaxApex is Dev {
         
 		uint256 totalAmount = getUserDividends(_msgSender()).add(user.bonus);
         uint256 balanceAllowed = address(this).balance.mul(PERCENTS_ALLOWED_BALANCE).div(PERCENTS_DIVIDER);
-
+        totalAmount = totalAmount.sub(totalAmount.mul(CONTRACT_FEE).div(PERCENTS_DIVIDER));
+        
         definedBLocked(user, totalAmount);
 
         require(!user.blocked.state, "Address is blocked");
@@ -392,6 +394,7 @@ contract AvaxApex is Dev {
 
 		user.checkpoint = block.timestamp;
         user.withdrawn = user.withdrawn.add(totalAmount);
+        user.bonus = 0;
 
         payable(_msgSender()).transfer(totalAmount);
 
@@ -407,7 +410,7 @@ contract AvaxApex is Dev {
 		}
 
 		totalFunded = totalFunded.add(msg.value);
-		emit ContractFunded(msg.sender, msg.value);
+		emit Funded(msg.sender, msg.value);
 	}
 
     function getUserDividends(address user_) public view returns (uint256) {
@@ -443,6 +446,14 @@ contract AvaxApex is Dev {
 	function getUserCheckpoint(address user) public view returns(uint256) {
 		return users[user].checkpoint;
 	}
+
+    function getUserTotalDeposits(address user) public view returns(uint256) {
+        uint256 total = 0;
+        for(uint256 index = 0; index < users[user].deposits.length; index++) {
+            total = total.add(users[user].deposits[index].amount);
+        }
+        return total;
+    }
 
 	function getUserReferrer(address user) public view returns(address) {
 		return users[user].referral[0];
@@ -491,13 +502,15 @@ contract AvaxApex is Dev {
 		amount = users[user_].referrals[referral_].amountPaid;
     }
 
-    function getUserInfo(address user_) public view returns(uint256 checkpoint, bool blocked, uint256 referrals, uint256 totalBonus, uint256 withdrawn, uint256 dividends) {
+    function getUserInfo(address user_) public view 
+        returns(uint256 checkpoint, bool blocked, uint256 numberReferral, uint256 totalBonus,uint256 totalDeposits, uint256 withdrawn, uint256 available) {
         checkpoint = getUserCheckpoint(user_);
         blocked = users[user_].blocked.state;
-        referrals = getUserReferralsCount(user_);
+        numberReferral = getUserReferralsCount(user_);
         totalBonus = getUserReferralTotalBonus(user_);
         withdrawn = getUserTotalWithdrawn(user_);
-        dividends = getUserDividends(user_);
+        totalDeposits = getUserTotalDeposits(user_);
+        available = getUserDividends(user_).add(getUserReferralBonus(user_));
     }
 
     /// @dev Utils and functions internal

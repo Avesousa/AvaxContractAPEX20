@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at snowtrace.io on 2022-04-06
+*/
+
 // SPDX-License-Identifier: MIT
 /*
  █████  ██    ██  █████  ██   ██      █████  ██████  ███████ ██   ██ 
@@ -307,17 +311,23 @@ contract Dev is Context, Owner{
 
 contract AvaxApex is Dev {
     using SafeMath for uint256;
+    using SafeMath for uint16;
     using SafeMath for uint8;
+
+    uint256 constant public AMOUNT_MIN_INVEST= 10000000000000000 wei;
+    uint256 constant public AMOUNT_MIN_WITHDRAWN = 15000000000000000 wei;
+    uint256 constant public AMOUNT_MAX_INVEST= 25 ether;
+    uint256 constant public AMOUNT_MAX_WITHDRAWN = 25 ether;
 
     uint8 constant public REFERRAL_PERCENTS = 25;
     uint8 constant public REFERRAL_PERCENTS_MAX = 100;
     uint8 constant public PROJECT_FEE = 100;
     uint8 constant public CONTRACT_FEE = 30;
-	uint8 constant public PERCENTS_DIVIDER = 1000;
+	uint16 constant public PERCENTS_DIVIDER = 1000;
 	uint8 constant public PERCENTS_PENALTY = 100;
     uint8 constant public PERCENTS_ALLOWED_BALANCE = 250;
-	uint8 constant public TIME_STEP = 1 days;
-    uint8 constant public DAYS_NOT_WHALE = 2 days;
+	uint256 constant public TIME_STEP = 1 days;
+    uint256 constant public DAYS_NOT_WHALE = 2 days;
 
     uint8 private constant _NOT_ENTERED = 1;
     uint8 private constant _ENTERED = 2;
@@ -393,6 +403,9 @@ contract AvaxApex is Dev {
 			} else revert("Not started yet");
 		}
         require(plan < 1, "Invalid plan");
+        require(msg.value >= AMOUNT_MIN_INVEST, "Amount less than authorized");
+        require(msg.value <= AMOUNT_MAX_INVEST, "Amount greater than authorized");
+
 		paidFee(msg.value);
 		User storage user = users[_msgSender()];
 
@@ -425,7 +438,7 @@ contract AvaxApex is Dev {
         paidReferrers(totalAmount);
         user.deposits.push(Deposit(0, totalAmount, block.timestamp));
         user.checkpoint = block.timestamp;
-        user.withdrawn = user.totalReinvest.add(totalAmount);
+        user.totalReinvest = user.totalReinvest.add(totalAmount);
         user.bonus = 0;
         emit ReInvest(_msgSender(), 0, totalAmount);
     }
@@ -443,11 +456,19 @@ contract AvaxApex is Dev {
 
         require(!user.blocked.state, "Address is blocked");
 		require(totalAmount > 0, "User has no dividends");
+        require(totalAmount > AMOUNT_MIN_WITHDRAWN, "Amount less than authorized");
         require(balanceAllowed > totalAmount, "Dividends amount not allowed");
+
+        if(totalAmount > AMOUNT_MAX_WITHDRAWN){
+            user.bonus = totalAmount.sub(AMOUNT_MAX_WITHDRAWN);
+            user.totalBonus = totalAmount.sub(AMOUNT_MAX_WITHDRAWN);
+            totalAmount = AMOUNT_MAX_WITHDRAWN;
+        }else {
+            user.bonus = 0;
+        }
 
 		user.checkpoint = block.timestamp;
         user.withdrawn = user.withdrawn.add(totalAmount);
-        user.bonus = 0;
 
         payable(_msgSender()).transfer(totalAmount);
 
@@ -466,11 +487,11 @@ contract AvaxApex is Dev {
 		emit Funded(msg.sender, msg.value);
 	}
 
-    function changePercentReferrer(address user, uint256 percent) public onlyDev onlyOwner{
+    function changePercentReferrer(address user, uint8 percent) public onlyDev onlyOwner{
         require(user != address(0));
         require(percent >= REFERRAL_PERCENTS, "Percent not allowed");
         require(percent <= REFERRAL_PERCENTS_MAX, "Percent not allowed");
-        definedPercentReferrer(user, index, percent);
+        definedPercentReferrer(user, percent);
     }
 
     /// @dev Functions that help to show info
@@ -537,7 +558,7 @@ contract AvaxApex is Dev {
 		finish = user.deposits[index].start.add(plans[user.deposits[index].plan].time.mul(1 days));
 	}
 
-    function getUserPercentReferrerInfo(address user_, uint8 index) public view returns(uint256) {
+    function getUserPercentReferrerInfo(address user_) public view returns(uint256) {
         return users[user_].percentReferral;
     }
 
@@ -567,7 +588,7 @@ contract AvaxApex is Dev {
 
     /// @dev Utils and functions internal
 
-    function getUserDividends(address user_) internal returns (uint256) {
+    function getUserDividends(address user_) internal view returns (uint256) {
 		User storage user = users[user_];
 
 		uint256 totalAmount;
@@ -591,9 +612,9 @@ contract AvaxApex is Dev {
         if(user.blocked.times > 1){
             user.blocked.state = true;
             user.blocked.investPenalty = amount.mul(PERCENTS_PENALTY).div(PERCENTS_DIVIDER);
-            totalUserBlocked++;
             if(user.blocked.date == 0){
                 user.blocked.date = block.timestamp.add(DAYS_NOT_WHALE);
+                totalUserBlocked++;
             }else if(user.blocked.date <= block.timestamp) {
                 user.blocked.state = false;
                 totalUserBlocked--;
@@ -626,7 +647,7 @@ contract AvaxApex is Dev {
         }
     }
 
-    function definedPercentReferrer(address user_, uint8 index, uint256 percent) internal{
+    function definedPercentReferrer(address user_, uint8 percent) internal{
         users[user_].percentReferral = percent;
     }
 

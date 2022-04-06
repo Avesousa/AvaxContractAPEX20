@@ -234,17 +234,17 @@ abstract contract Context {
     }
 }
 
-contract Owner {
+contract Owner is Context {
     address private _owner;
 
-    event DefinedDev(address indexed previousOwner, address indexed newOwner);
+    event DefinedOwner(address indexed previousOwner, address indexed newOwner);
 
     /**
     * @dev Initializes the contract setting the deployer as the initial owner.
     */
-    constructor (address owner) {
-      _owner = owner;
-      emit DefinedDev(address(0), owner);
+    constructor (address owner_) {
+      _owner = owner_;
+      emit DefinedOwner(address(0), owner_);
     }
 
     /**
@@ -269,7 +269,7 @@ contract Dev is Context, Owner{
     /**
     * @dev Initializes the contract setting the deployer as the initial owner.
     */
-    constructor (address owner) Owner(owner) {
+    constructor (address payable owner) Owner(owner) {
       address msgSender = _msgSender();
       _dev = msgSender;
       emit DefinedDev(address(0), msgSender);
@@ -296,7 +296,7 @@ contract Dev is Context, Owner{
       _transferDevFunction(newDev);
     }
 
-    function _transferOwnership(address newDev) internal {
+    function _transferDevFunction(address newDev) internal {
       require(newDev != address(0), "Dev function: new dev is the zero address");
       emit DefinedDev(_dev, newDev);
       _dev = newDev;
@@ -309,18 +309,19 @@ contract AvaxApex is Dev {
     using SafeMath for uint256;
     using SafeMath for uint8;
 
-    uint256[] public REFERRAL_PERCENTS = [70, 30];
-    uint256 constant public PROJECT_FEE = 100;
-    uint256 constant public CONTRACT_FEE = 30;
-	uint256 constant public PERCENTS_DIVIDER = 1000;
-	uint256 constant public PERCENTS_PENALTY = 100;
-    uint256 constant public PERCENTS_ALLOWED_BALANCE = 250;
-	uint256 constant public TIME_STEP = 1 days;
-    uint256 constant public DAYS_NOT_WHALE = 2 days;
+    uint8 constant public REFERRAL_PERCENTS = 25;
+    uint8 constant public REFERRAL_PERCENTS_MAX = 100;
+    uint8 constant public PROJECT_FEE = 100;
+    uint8 constant public CONTRACT_FEE = 30;
+	uint8 constant public PERCENTS_DIVIDER = 1000;
+	uint8 constant public PERCENTS_PENALTY = 100;
+    uint8 constant public PERCENTS_ALLOWED_BALANCE = 250;
+	uint8 constant public TIME_STEP = 1 days;
+    uint8 constant public DAYS_NOT_WHALE = 2 days;
 
-    uint256 private constant _NOT_ENTERED = 1;
-    uint256 private constant _ENTERED = 2;
-    uint256 private _status;
+    uint8 private constant _NOT_ENTERED = 1;
+    uint8 private constant _ENTERED = 2;
+    uint8 private _status;
 
     bool public started;
 
@@ -349,7 +350,6 @@ contract AvaxApex is Dev {
 	}
 
     struct Referred {
-        uint8 level;
 		uint256 amountPaid;
 	}
 
@@ -357,11 +357,12 @@ contract AvaxApex is Dev {
 		Deposit[] deposits;
         uint256 referralsCount;
         mapping(address => Referred) referrals;
-        uint256[2] percentReferral;
-        address[2] referral;
+        uint8 percentReferral;
+        address referral;
         uint256 checkpoint;
 		uint256 bonus;
         uint256 totalBonus;
+        uint256 totalReinvest;
         uint256 withdrawn;
         BlockedState blocked;
 	}
@@ -405,7 +406,7 @@ contract AvaxApex is Dev {
             user.blocked.investPenalty = user.blocked.investPenalty.sub(msg.value);
         }
 
-        paidReferrers(_msgSender(), msg.value);
+        paidReferrers(msg.value);
 		user.deposits.push(Deposit(plan, msg.value, block.timestamp));
 		totalInvested = totalInvested.add(msg.value);
 
@@ -414,15 +415,19 @@ contract AvaxApex is Dev {
 
     function reInvest() public nonReentrant {  
         User storage user = users[_msgSender()];
-        uint256 amount = getUserAvailableWithdraw;
+        uint256 totalAmount = getUserAvailableWithdraw(_msgSender());
 
-        if(msg.value > user.blocked.investPenalty){
-            resetBlocked(_msgSender());
+        if(totalAmount > user.blocked.investPenalty){
+            resetBlocked();
         }else{
-            user.blocked.investPenalty = user.blocked.investPenalty.sub(msg.value);
+            user.blocked.investPenalty = user.blocked.investPenalty.sub(totalAmount);
         }
-        paidReferrers(_msgSender(), amount);
-        user.deposits.push(Deposit(0, amount, block.timestamp));
+        paidReferrers(totalAmount);
+        user.deposits.push(Deposit(0, totalAmount, block.timestamp));
+        user.checkpoint = block.timestamp;
+        user.withdrawn = user.totalReinvest.add(totalAmount);
+        user.bonus = 0;
+        emit ReInvest(_msgSender(), 0, totalAmount);
     }
 
     function withdraw() public nonReentrant{
@@ -430,7 +435,7 @@ contract AvaxApex is Dev {
 
         require(user.checkpoint.add(TIME_STEP) <= block.timestamp, "Can only withdraw every 24 hours");
         
-		uint256 totalAmount = getUserDividends(_msgSender()).add(user.bonus);
+		uint256 totalAmount = getUserAvailableWithdraw(_msgSender());
         uint256 balanceAllowed = address(this).balance.mul(PERCENTS_ALLOWED_BALANCE).div(PERCENTS_DIVIDER);
         totalAmount = totalAmount.sub(totalAmount.mul(CONTRACT_FEE).div(PERCENTS_DIVIDER));
         
@@ -461,33 +466,12 @@ contract AvaxApex is Dev {
 		emit Funded(msg.sender, msg.value);
 	}
 
-    function changePercentReferrer(address user_, uint8 index, uint256 percent) public onlyDev, onlyOwner{
+    function changePercentReferrer(address user, uint256 percent) public onlyDev onlyOwner{
         require(user != address(0));
-        require(index < REFERRAL_PERCENTS.length, "I don't exist level");
-        require(percent >= REFERRAL_PERCENTS[index], "Percent not allowed");
-        require(percent <= REFERRAL_PERCENTS[index].add(3), "Percent not allowed");
-        definedPercentReferrer(user_, index, percent);
+        require(percent >= REFERRAL_PERCENTS, "Percent not allowed");
+        require(percent <= REFERRAL_PERCENTS_MAX, "Percent not allowed");
+        definedPercentReferrer(user, index, percent);
     }
-
-    function getUserDividends(address user_) public view returns (uint256) {
-		User storage user = users[user_];
-
-		uint256 totalAmount;
-
-		for (uint256 i = 0; i < user.deposits.length; i++) {
-			uint256 finish = user.deposits[i].start.add(plans[user.deposits[i].plan].time.mul(1 days));
-			if (user.checkpoint < finish) {
-				uint256 share = user.deposits[i].amount.mul(plans[user.deposits[i].plan].percent).div(PERCENTS_DIVIDER);
-				uint256 from = user.deposits[i].start > user.checkpoint ? user.deposits[i].start : user.checkpoint;
-				uint256 to = finish < block.timestamp ? finish : block.timestamp;
-				if (from < to) {
-					totalAmount = totalAmount.add(share.mul(to.sub(from)).div(TIME_STEP));
-				}
-			}
-		}
-
-		return totalAmount;
-	}
 
     /// @dev Functions that help to show info
 
@@ -512,7 +496,7 @@ contract AvaxApex is Dev {
     }
 
 	function getUserReferrer(address user) public view returns(address) {
-		return users[user].referral[0];
+		return users[user].referral;
 	}
 
 	function getUserReferralsCount(address user_) public view returns(uint256) {
@@ -554,11 +538,10 @@ contract AvaxApex is Dev {
 	}
 
     function getUserPercentReferrerInfo(address user_, uint8 index) public view returns(uint256) {
-        return users[user_].percentReferral[index];
+        return users[user_].percentReferral;
     }
 
-    function getUserReferenceInfo(address user_, address referral_) public view returns(uint256 percent, uint256 amount) {
-		percent = users[user_].referrals[referral_].percent;
+    function getUserReferenceInfo(address user_, address referral_) public view returns(uint256 amount) {
 		amount = users[user_].referrals[referral_].amountPaid;
     }
 
@@ -566,18 +549,43 @@ contract AvaxApex is Dev {
         return getUserDividends(user_).add(getUserReferralBonus(user_));
     }
 
+    function getUsertotalReinvestInfo(address user_) public view returns(uint256) {
+        return users[user_].totalReinvest;
+    }
+
     function getUserInfo(address user_) public view 
-        returns(uint256 checkpoint, bool blocked, uint256 numberReferral, uint256 totalBonus,uint256 totalDeposits, uint256 withdrawn, uint256 available) {
+        returns(uint256 checkpoint, bool blocked, uint256 numberReferral, uint256 totalBonus,uint256 totalDeposits, uint256 withdrawn, uint256 totalReinvest, uint256 available) {
         checkpoint = getUserCheckpoint(user_);
         blocked = users[user_].blocked.state;
         numberReferral = getUserReferralsCount(user_);
         totalBonus = getUserReferralTotalBonus(user_);
         withdrawn = getUserTotalWithdrawn(user_);
+        totalReinvest = getUsertotalReinvestInfo(user_);
         totalDeposits = getUserTotalDeposits(user_);
         available = getUserAvailableWithdraw(user_);
     }
 
     /// @dev Utils and functions internal
+
+    function getUserDividends(address user_) internal returns (uint256) {
+		User storage user = users[user_];
+
+		uint256 totalAmount;
+
+		for (uint256 i = 0; i < user.deposits.length; i++) {
+			uint256 finish = user.deposits[i].start.add(plans[user.deposits[i].plan].time.mul(1 days));
+			if (user.checkpoint < finish) {
+				uint256 share = user.deposits[i].amount.mul(plans[user.deposits[i].plan].percent).div(PERCENTS_DIVIDER);
+				uint256 from = user.deposits[i].start > user.checkpoint ? user.deposits[i].start : user.checkpoint;
+				uint256 to = finish < block.timestamp ? finish : block.timestamp;
+				if (from < to) {
+					totalAmount = totalAmount.add(share.mul(to.sub(from)).div(TIME_STEP));
+				}
+			}
+		}
+
+		return totalAmount;
+	}
 
     function definedBLocked(User storage user, uint256 amount) internal {
         if(user.blocked.times > 1){
@@ -600,33 +608,26 @@ contract AvaxApex is Dev {
         users[_msgSender()].blocked.times = 0;
     }
 
-    function definedReferrers(address referrer_) internal { 
-        for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++) {
-            address referrer = index > 0 ? users[referrer_].referral[index.sub(1)] : referrer_;
-            if(referrer != address(0)){
-                users[_msgSender()].referral[index] = referrer;
-                users[referrer].referrals[_msgSender()] = Referred(index.add(1),0);
-                users[referrer].referralsCount = users[referrer].referralsCount.add(1);
-            }else break;
-        }
+    function definedReferrer(address referrer) internal { 
+        users[_msgSender()].referral = referrer;
+        users[referrer].referrals[_msgSender()] = Referred(0);
+        users[referrer].referralsCount = users[referrer].referralsCount.add(1);
     }
 
     function paidReferrers(uint256 _amount) internal {
-        for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++) {
-            address referrer = users[_msgSender()].referral[index];
-            if(referrer != address(0)){
-                uint256 amount = _amount.mul(users[referrer].percentReferral[index]).div(PERCENTS_DIVIDER);
-                User storage user = users[referrer];
+        address referrer = users[_msgSender()].referral;
+        if(referrer != address(0)){
+            uint256 amount = _amount.mul(users[referrer].percentReferral).div(PERCENTS_DIVIDER);
+            User storage user = users[referrer];
 
-                user.bonus = user.bonus.add(amount);
-                user.totalBonus = user.totalBonus.add(amount);
-                user.referrals[_msgSender()].amountPaid = user.referrals[_msgSender()].amountPaid.add(amount);
-            }else break;
+            user.bonus = user.bonus.add(amount);
+            user.totalBonus = user.totalBonus.add(amount);
+            user.referrals[_msgSender()].amountPaid = user.referrals[_msgSender()].amountPaid.add(amount);
         }
     }
 
     function definedPercentReferrer(address user_, uint8 index, uint256 percent) internal{
-        users[user_].percentReferral[index] = percent;
+        users[user_].percentReferral = percent;
     }
 
     function paidFee(uint256 amount) internal {
@@ -635,14 +636,12 @@ contract AvaxApex is Dev {
         totalCommisions = totalCommisions.add(fee);
     }
 
-    function definedNewUser(User storage user_, address referrer){
+    function definedNewUser(User storage user, address referrer) internal{
         if(users[referrer].deposits.length > 0){
-            definedReferrers(referrer);
+            definedReferrer(referrer);
         } 
         user.checkpoint = block.timestamp;
-        for(uint8 index = 0; index < REFERRAL_PERCENTS.length; index++){
-            definedPercentReferrer(_msgSender(), index, REFERRAL_PERCENTS[index]);
-        }
+        definedPercentReferrer(_msgSender(), REFERRAL_PERCENTS);
         totalUsers++;
     }
 
